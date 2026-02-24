@@ -2,7 +2,7 @@ const { createApp, computed, nextTick, ref, watch } = Vue;
 
 createApp({
   setup() {
-    const minTasksRequired = 8;
+    const minTasksRequired = 1;
     const currentStep = ref(1);
     const taskPlaceholderSamples = [
       "例如：技術開發",
