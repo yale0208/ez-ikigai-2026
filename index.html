@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>創準年度職涯回顧自評 MVP</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <main id="app" class="container">
+      <header class="header">
+        <div class="header-brand">
+          <img src="./logo.png" alt="創準年度職涯回顧自評 Logo" class="header-logo" />
+          <h1>2026<br>創準年度職涯回顧自評</h1>
+        </div>
+        <!-- <p>列舉去年任務 → 四項評分 → 分布與平衡回饋</p> -->
+      </header>
+
+      <nav class="stepper" aria-label="流程步驟">
+        <button class="step" :class="{ active: currentStep === 1 }" @click="goToStep(1)">
+          1. 列舉任務
+        </button>
+        <button class="step" :class="{ active: currentStep === 2 }" @click="goToStep(2)">
+          2. 任務表現自評
+        </button>
+        <button class="step" :class="{ active: currentStep === 3 }" @click="goToStep(3)">
+          3. 展示結果
+        </button>
+        <button class="step" :class="{ active: currentStep === 4 }" @click="goToStep(4)">
+          4. 原始資料總表
+        </button>
+      </nav>
+
+      <div class="progress" aria-label="進度">
+        <div class="progress-meta">
+          <span>目前進度</span>
+          <strong>{{ progressPercent }}%</strong>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+        </div>
+      </div>
+
+      <section class="panel" v-if="currentStep === 1">
+        <div class="panel-head">
+          <h2>步驟 1：列舉主要任務或貢獻</h2>
+        </div>
+
+        <p class="hint">至少需填寫 {{ minTasksRequired }} 筆有名稱任務（目前 {{ tasks.filter(t => t.name.trim()).length }} 筆）。</p>
+
+        <div v-if="tasks.length === 0" class="empty">目前沒有任務，請先新增至少一筆。</div>
+
+        <div class="task" v-for="(task, index) in tasks" :key="task.id">
+          <button
+            class="task-delete"
+            @click="removeTask(task.id)"
+            aria-label="刪除任務"
+            title="刪除任務"
+          >
+            ×
+          </button>
+
+          <div class="task-title">
+            <label>任務 {{ index + 1 }}</label>
+            <input class="textfield" v-model.trim="task.name" :placeholder="task.placeholder || '例如：技術開發'" />
+          </div>
+        </div>
+
+        <div class="page-actions">
+          <button class="btn btn-cta" @click="addTask">＋ 新增任務</button>
+          <button class="btn btn-primary" @click="goToStep(2)">下一步：任務表現自評</button>
+        </div>
+      </section>
+
+      <section class="panel" v-if="currentStep === 2">
+        <div class="panel-head">
+          <h2>步驟 2：任務表現自評</h2>
+          <button class="btn" @click="goToStep(1)">返回任務列表</button>
+        </div>
+
+        <div class="task" v-for="(task, index) in tasks" :key="task.id">
+          <div class="task-title">
+            <label>任務 {{ index + 1 }}</label>
+            <input class="textfield" v-model.trim="task.name" :placeholder="task.placeholder || '例如：技術開發'" />
+          </div>
+
+          <div class="grid">
+            <fieldset class="rating-group">
+              <legend>擅長程度</legend>
+              <div class="rating-options">
+                <label class="rating-option" v-for="option in ratingOptions" :key="`g-${task.id}-${option.value}`">
+                  <input
+                    type="radio"
+                    :name="`goodAt-${task.id}`"
+                    :value="option.value"
+                    v-model.number="task.scores.goodAt"
+                  />
+                  <span>{{ option.label }}</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="rating-group">
+              <legend>喜歡程度</legend>
+              <div class="rating-options">
+                <label class="rating-option" v-for="option in ratingOptions" :key="`l-${task.id}-${option.value}`">
+                  <input
+                    type="radio"
+                    :name="`love-${task.id}`"
+                    :value="option.value"
+                    v-model.number="task.scores.love"
+                  />
+                  <span>{{ option.label }}</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="rating-group">
+              <legend>成就感</legend>
+              <div class="rating-options">
+                <label class="rating-option" v-for="option in ratingOptions" :key="`m-${task.id}-${option.value}`">
+                  <input
+                    type="radio"
+                    :name="`meaning-${task.id}`"
+                    :value="option.value"
+                    v-model.number="task.scores.meaning"
+                  />
+                  <span>{{ option.label }}</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="rating-group">
+              <legend>薪資回報</legend>
+              <div class="rating-options">
+                <label class="rating-option" v-for="option in ratingOptions" :key="`p-${task.id}-${option.value}`">
+                  <input
+                    type="radio"
+                    :name="`paid-${task.id}`"
+                    :value="option.value"
+                    v-model.number="task.scores.paid"
+                  />
+                  <span>{{ option.label }}</span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+
+        <div class="page-actions page-actions-between">
+          <button class="btn" @click="goToStep(1)">上一步</button>
+          <button class="btn btn-primary" @click="goToStep(3)">下一步：展示結果</button>
+        </div>
+      </section>
+
+      <section class="panel" v-if="currentStep === 3">
+        <div class="panel-head">
+          <h2>步驟 3：加總、分布與回饋</h2>
+          <button class="btn" @click="goToStep(2)">返回任務表現自評</button>
+        </div>
+
+        <div class="score-cards">
+          <article class="card">
+            <h3>熱情（Passion）</h3>
+            <p>{{ normalizedTotals.passion }}%</p>
+          </article>
+          <article class="card">
+            <h3>使命（Mission）</h3>
+            <p>{{ normalizedTotals.mission }}%</p>
+          </article>
+          <article class="card">
+            <h3>志向（Calling）</h3>
+            <p>{{ normalizedTotals.calling }}%</p>
+          </article>
+          <article class="card">
+            <h3>專業（Mastery）</h3>
+            <p>{{ normalizedTotals.mastery }}%</p>
+          </article>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="radarChart"></canvas>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="barChart"></canvas>
+        </div>
+
+        <div class="feedback">
+          <h3>平衡分析</h3>
+          <p><strong>整體平均分數：</strong>{{ balance.averageScore }}% {{ balance.averageLevel }}</p>
+          <p><strong>工作意義型態：</strong>{{ balance.typeLabel }}<br>{{ balance.typeTrait }}</p>
+          <p><strong>工作意義平衡：</strong>{{ balance.balanceLabel }}</p>
+          <p><strong>平衡差距：</strong>{{ balance.gapPercent }}%</p>
+          <p><strong>動能建議：</strong><span class="feedback-preline">{{ balance.energySuggestion }}</span></p>
+          <p><strong>AI建議：</strong><span class="feedback-preline">{{ balance.suggestion }}</span></p>
+          <!-- <p><strong>主要風險：</strong>{{ balance.risk }}</p> -->
+          <p v-if="balance.message">{{ balance.message }}</p>
+        </div>
+
+        <div class="page-actions page-actions-between">
+          <button class="btn" @click="goToStep(2)">上一步</button>
+          <button class="btn btn-primary" @click="goToStep(4)">下一步：原始資料總表</button>
+        </div>
+      </section>
+
+      <section class="panel" v-if="currentStep === 4">
+        <div class="panel-head">
+          <h2>步驟 4：原始填寫資料總表</h2>
+          <button class="btn" @click="goToStep(3)">返回展示結果</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="raw-table" aria-label="原始填寫資料總表">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>任務</th>
+                <th>擅長程度</th>
+                <th>喜歡程度</th>
+                <th>成就感</th>
+                <th>薪資報酬</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in rawTaskRows" :key="`raw-${row.index}`">
+                <td>{{ row.index }}</td>
+                <td>{{ row.name || '—' }}</td>
+                <td>{{ row.goodAt }}</td>
+                <td>{{ row.love }}</td>
+                <td>{{ row.meaning }}</td>
+                <td>{{ row.paid }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="page-actions">
+          <button class="btn" @click="goToStep(3)">上一步</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="./feedback.config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
