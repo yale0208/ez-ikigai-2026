@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="./style.css" />
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 
 <body>
@@ -140,7 +141,7 @@
             </div>
         </section>
 
-        <section class="panel" v-if="currentStep === 3">
+        <section class="panel" v-if="currentStep === 3" ref="stepThreePanel">
             <div class="panel-head">
                 <h2>步驟 3：加總、分布與回饋</h2>
                 <button class="btn" @click="goToStep(2)">返回任務表現自評</button>
@@ -187,7 +188,10 @@
 
             <div class="page-actions page-actions-between">
                 <button class="btn" @click="goToStep(2)">上一步</button>
-                <button class="btn btn-primary" @click="goToStep(4)">下一步：原始資料總表</button>
+                <div class="page-actions-inline">
+                    <button class="btn" @click="shareStepThreeScreenshot">分享第 3 頁截圖</button>
+                    <button class="btn btn-primary" @click="goToStep(4)">下一步：原始資料總表</button>
+                </div>
             </div>
         </section>
 
@@ -223,9 +227,20 @@
             </div>
 
             <div class="page-actions">
+                <button class="btn" @click="copyRawTableShareText">複製原始填答表格文字</button>
                 <button class="btn" @click="goToStep(3)">上一步</button>
             </div>
         </section>
+
+        <div
+            v-if="notice.show"
+            class="notice"
+            :class="[`notice-${notice.type}`]"
+            role="status"
+            aria-live="polite"
+        >
+            {{ notice.text }}
+        </div>
     </main>
 
     <script src="./feedback.config.js"></script>

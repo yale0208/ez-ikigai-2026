@@ -4,6 +4,9 @@ createApp({
   setup() {
     const minTasksRequired = 8;
     const currentStep = ref(1);
+    const stepThreePanel = ref(null);
+    const notice = ref({ show: false, text: "", type: "info" });
+    let noticeTimer = null;
     const taskPlaceholderSamples = [
       "例如：技術開發",
       "例如：學習",
@@ -151,6 +154,22 @@ createApp({
         paid: task.scores.paid ?? "-"
       }))
     );
+
+    const rawTableShareText = computed(() => {
+      const header = ["#", "任務", "擅長程度", "喜歡程度", "成就感", "薪資報酬"].join("\t");
+      const rows = rawTaskRows.value.map((row) =>
+        [
+          row.index,
+          row.name || "—",
+          row.goodAt,
+          row.love,
+          row.meaning,
+          row.paid
+        ].join("\t")
+      );
+
+      return ["【創準年度職涯回顧自評｜原始填答表】", header, ...rows].join("\n");
+    });
 
     const balance = computed(() => {
       const config = feedbackConfig;
@@ -364,6 +383,99 @@ createApp({
       }
     };
 
+    const showNotice = (text, type = "info") => {
+      notice.value = { show: true, text, type };
+      if (noticeTimer) {
+        clearTimeout(noticeTimer);
+      }
+      noticeTimer = setTimeout(() => {
+        notice.value = { show: false, text: "", type: "info" };
+      }, 2200);
+    };
+
+    const shareStepThreeScreenshot = async () => {
+      if (!stepThreePanel.value) {
+        showNotice("找不到第 3 頁內容，請稍後再試。", "error");
+        return;
+      }
+
+      if (typeof window.html2canvas !== "function") {
+        showNotice("截圖工具尚未載入，請重新整理後再試。", "error");
+        return;
+      }
+
+      try {
+        const canvas = await window.html2canvas(stepThreePanel.value, {
+          backgroundColor: "#f7f8fb",
+          scale: Math.min(2, window.devicePixelRatio || 1),
+          useCORS: true
+        });
+
+        const blob = await new Promise((resolve) => {
+          canvas.toBlob(resolve, "image/png");
+        });
+
+        if (!blob) {
+          showNotice("截圖失敗，請稍後再試。", "error");
+          return;
+        }
+
+        const file = new File([blob], `ikigai-step3-${Date.now()}.png`, { type: "image/png" });
+
+        if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+          await navigator.share({
+            title: "創準年度職涯回顧自評｜結果截圖",
+            text: "這是我的 Ikigai 四軸結果。",
+            files: [file]
+          });
+          showNotice("已開啟分享面板。", "success");
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = file.name;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+        showNotice("此裝置不支援直接分享，已改為下載截圖檔。", "info");
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          showNotice("截圖分享失敗，請稍後再試。", "error");
+        }
+      }
+    };
+
+    const copyRawTableShareText = async () => {
+      if (!rawTaskRows.value.length) {
+        showNotice("目前沒有可複製的資料。", "error");
+        return;
+      }
+
+      const content = rawTableShareText.value;
+
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(content);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = content;
+          textarea.setAttribute("readonly", "readonly");
+          textarea.style.position = "fixed";
+          textarea.style.left = "-9999px";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        showNotice("已複製原始填答表格文字，可直接貼上分享。", "success");
+      } catch {
+        showNotice("複製失敗，請稍後再試。", "error");
+      }
+    };
+
     const addTask = async () => {
       tasks.value.push({
         id: crypto.randomUUID(),
@@ -454,9 +566,13 @@ createApp({
       rawTaskRows,
       normalizedTotals,
       balance,
+      stepThreePanel,
+      notice,
       addTask,
       removeTask,
-      goToStep
+      goToStep,
+      shareStepThreeScreenshot,
+      copyRawTableShareText
     };
   }
 }).mount("#app");
