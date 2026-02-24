@@ -4,8 +4,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>創準年度職涯回顧自評 MVP</title>
-    <link rel="stylesheet" href="./style.css" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>2026 創準年度職涯回顧自評</title>
+    <script>
+        window.__ASSET_VERSION__ = "20260224-1";
+    </script>
+    <link id="appStylesheet" rel="stylesheet" href="./style.css" />
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -15,8 +21,9 @@
     <main id="app" class="container">
         <header class="header">
             <div class="header-brand">
-                <img src="./logo.png" alt="創準年度職涯回顧自評 Logo" class="header-logo" />
-                <h1>2026</h1><h1>創準年度職涯回顧自評</h1>
+                <img id="headerLogo" src="./logo.png" alt="創準年度職涯回顧自評 Logo" class="header-logo" />
+                <h1>2026</h1>
+                <h1>創準年度職涯回顧自評</h1>
             </div>
             <!-- <p>列舉去年任務 → 四項評分 → 分布與平衡回饋</p> -->
         </header>
@@ -187,8 +194,8 @@
             </div>
 
             <div class="page-actions page-actions-between">
-                <button class="btn" @click="goToStep(2)">上一步</button>
                 <div class="page-actions-inline">
+                    <button class="btn" @click="goToStep(2)">上一步</button>
                     <button class="btn" @click="shareStepThreeScreenshot">分享第 3 頁截圖</button>
                     <button class="btn btn-primary" @click="goToStep(4)">下一步：原始資料總表</button>
                 </div>
@@ -232,19 +239,41 @@
             </div>
         </section>
 
-        <div
-            v-if="notice.show"
-            class="notice"
-            :class="[`notice-${notice.type}`]"
-            role="status"
-            aria-live="polite"
-        >
+        <div v-if="notice.show" class="notice" :class="[`notice-${notice.type}`]" role="status" aria-live="polite">
             {{ notice.text }}
         </div>
     </main>
 
-    <script src="./feedback.config.js"></script>
-    <script src="./app.js"></script>
+    <script>
+        (function () {
+            const version = window.__ASSET_VERSION__ || "dev";
+            const withVersion = (path) => `${path}?v=${encodeURIComponent(version)}`;
+
+            const stylesheet = document.getElementById("appStylesheet");
+            if (stylesheet) {
+                stylesheet.href = withVersion("./style.css");
+            }
+
+            const logo = document.getElementById("headerLogo");
+            if (logo) {
+                logo.src = withVersion("./logo.png");
+            }
+
+            const loadScript = (path) => new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = withVersion(path);
+                script.onload = resolve;
+                script.onerror = reject;
+                document.body.appendChild(script);
+            });
+
+            loadScript("./feedback.config.js")
+                .then(() => loadScript("./app.js"))
+                .catch(() => {
+                    console.error("載入本地腳本失敗，請重新整理後再試。");
+                });
+        })();
+    </script>
 </body>
 
 </html>
